@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pong</title>
+</head>
+<body>
+<canvas id="gameCanvas" width="800" height="600"></canvas>
+<script>
+	let canvas, canvasContext;
+	let ballX = 400;
+	let ballY = 300;
+	let ballSpeedX = 3;
+	let ballSpeedY = 0;
+
+	let paddle1Y = 300;
+	let paddle2Y = 300;
+	const paddleHeight = 100;
+	const paddleDistFromEdge = 10;
+	const paddleThickness = 10;
+
+	let playerScore = 0;
+	let computerScore = 0;
+	const winningScore = 5;
+
+	let playingGame = true;
+
+    window.onload = () => {
+		canvas = document.querySelector('#gameCanvas');
+		canvasContext = canvas.getContext('2d');
+
+		canvas.addEventListener("mousedown", handleMouseClick);
+
+		canvas.addEventListener("mousemove", (event) => {
+            let mousePos = calculateMousePosition(event);
+            paddle1Y = mousePos.y - paddleHeight/2;
+        });
+
+		setInterval(runGame, 1000/60);
+    }
+
+    const handleMouseClick = () => {
+        if (!playingGame) {
+            playerScore = 0;
+            computerScore = 0;
+            playingGame = true;
+        }
+    }
+
+    const ballReset = () => {
+        if (playerScore >= winningScore || computerScore >= winningScore) {
+            playingGame = false;
+        }
+
+        ballSpeedX = -ballSpeedX;
+        ballSpeedY = 0;
+        ballX = canvas.width/2;
+        ballY = canvas.height/2;
+    }
+
+    const calculateMousePosition = (event) => {
+        let gameRect = canvas.getBoundingClientRect();
+        let root = document.documentElement;
+
+        let mouseX = event.clientX - gameRect.left - root.scrollLeft;
+        let mouseY = event.clientY - gameRect.top - root.scrollTop;
+
+        return {x: mouseX, y: mouseY};
+    }
+
+    const runGame = () => {
+        moveEverything();
+        drawEverything();
+    }
+
+    const computerMovement = () => {
+        let paddleCenter = paddle2Y + paddleHeight / 2;
+        if (paddleCenter < ballY - 35) {
+            paddle2Y += 6;
+        } else if (paddleCenter > ballY - 35) {
+            paddle2Y -= 6;
+        }
+    }
+
+    const moveEverything = () => {
+        if (!playingGame) {
+            return;
+        }
+        computerMovement();
+
+        ballX += ballSpeedX;
+        ballY += ballSpeedY;
+        if (ballX < 0) {
+            computerScore ++;
+            ballReset();
+        }
+
+        if (ballX > canvas.width) {
+            playerScore ++;
+            ballReset();
+        }
+
+        if (ballX > canvas.width) {
+            ballSpeedX = -ballSpeedX;
+        }
+
+        if (ballY < 0) {
+            ballSpeedY = -ballSpeedY;
+        }
+
+        if (ballY > canvas.height) {
+            ballSpeedY = -ballSpeedY;
+        }
+
+        let playerPaddleTop = paddle1Y;
+        let playerPaddleBottom = paddle1Y + paddleHeight;
+        let playerPaddleLeft = paddleDistFromEdge;
+        let playerPaddleRight = paddleDistFromEdge + paddleThickness;
+
+        if (ballY >= playerPaddleTop &&
+            ballY <= playerPaddleBottom &&
+            ballX >= playerPaddleLeft &&
+            ballX <= playerPaddleRight) {
+            ballSpeedX = -ballSpeedX;
+            let diffY = ballY - (paddle1Y + paddleHeight/2);
+            ballSpeedY = diffY * 0.33;
+        }
+
+        let opponentPaddleTop = paddle2Y;
+        let opponentPaddleBottom = paddle2Y + paddleHeight;
+        let opponentPaddleLeft = canvas.width - paddleDistFromEdge - paddleThickness;
+        let opponentPaddleRight = canvas.width - paddleDistFromEdge;
+
+        if (ballY >= opponentPaddleTop &&
+            ballY <= opponentPaddleBottom &&
+            ballX >= opponentPaddleLeft &&
+            ballX <= opponentPaddleRight) {
+            ballSpeedX = -ballSpeedX;
+            let diffY = ballY - (paddle2Y + paddleHeight/2);
+            ballSpeedY = diffY * 0.33;
+        }
+
+    }
+
+    const drawEverything = () => {
+
+        // background
+        drawRectangle(0, 0, canvas.width, canvas.height, 'black');
+
+        if (!playingGame) {
+            canvasContext.fillStyle = 'white';
+           // canvasContext.font = "23px Arial";
+            if (playerScore >= winningScore) {
+                canvasContext.fillText('Player won!', 400, 200);
+            } else if (computerScore >= winningScore) {
+                canvasContext.fillText('Computer won!', 400, 200);
+            }
+
+            canvasContext.fillText('click to play again', 400, 300);
+            return;
+        }
+
+        // ball;
+        drawCircle(ballX, ballY, 10, 'red');
+
+        // game palette
+        drawRectangle(paddleDistFromEdge, paddle1Y, paddleThickness, paddleHeight, 'white');
+
+        // opponent
+        drawRectangle(canvas.width - paddleThickness - paddleDistFromEdge, paddle2Y, paddleThickness, paddleHeight, 'white');
+
+        canvasContext.font = "23px Arial";
+        canvasContext.fillText(playerScore, 100, 100);
+        canvasContext.font = "23px Arial";
+        canvasContext.fillText(computerScore, 700, 100);
+
+        drawNet();
+	}
+
+	const drawNet = () => {
+        for (let i = 0; i < canvas.height; i+=40) {
+            drawRectangle(canvas.width/2-1, i, 2, 20, 'white');
+        }
+    }
+
+	const drawRectangle = (posX, posY, width, height, color) => {
+        canvasContext.fillStyle = color;
+        canvasContext.fillRect(posX, posY, width, height);
+    }
+
+    const drawCircle = (centerX, centerY, radius, color) => {
+        canvasContext.fillStyle = color;
+        canvasContext.beginPath();
+        canvasContext.arc(centerX, centerY, radius, 0, Math.PI * 2);
+        canvasContext.fill();
+    }
+
+</script>
+</body>
+</html>
